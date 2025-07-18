@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Send My Location</title>
+</head>
+<body>
+  <h2>📍 Send My Location to Server</h2>
+  <button onclick="sendLocation()">Send Now</button>
+
+  <script>
+    function sendLocation() {
+      if (!navigator.geolocation) {
+        alert("❌ Geolocation not supported.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const coords = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          timestamp: new Date().toISOString()
+        };
+
+        fetch("https://yourusername.pythonanywhere.com/update-location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(coords)
+        })
+        .then(res => res.json())
+        .then(data => alert("✅ Sent!\n" + JSON.stringify(data)))
+        .catch(err => alert("❌ Error sending: " + err));
+      }, err => {
+        alert("❌ Location Error: " + err.message);
+      });
+    }
+  </script>
+</body>
+</html>
