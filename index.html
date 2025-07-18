@@ -1,38 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Send My Location</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Location & Preferences</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h2>📍 Send My Location to Server</h2>
-  <button onclick="sendLocation()">Send Now</button>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col items-center justify-center px-4">
+
+  <div class="w-full max-w-xl p-6 bg-white rounded-2xl shadow-xl">
+    <h2 class="text-2xl font-bold mb-4 text-center">📍 Share Your Location & Preferences</h2>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+      <!-- User Preferences -->
+      <button class="pref-btn">Top News</button>
+      <button class="pref-btn">World</button>
+      <button class="pref-btn">Business</button>
+      <button class="pref-btn">Tech</button>
+      <button class="pref-btn">Health</button>
+      <button class="pref-btn">Sports</button>
+      <button class="pref-btn">Entertainment</button>
+      <button class="pref-btn">Environment</button>
+      <button class="pref-btn">Travel</button>
+    </div>
+
+    <button id="getLocationBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition">
+      📡 Send My Location & Preferences
+    </button>
+
+    <p id="status" class="mt-4 text-sm text-center text-gray-600"></p>
+  </div>
 
   <script>
-    function sendLocation() {
+    const status = document.getElementById("status");
+    const selectedPrefs = new Set();
+
+    // Style & select logic
+    document.querySelectorAll('.pref-btn').forEach(btn => {
+      btn.classList.add('bg-gray-200', 'rounded-lg', 'py-2', 'px-3', 'text-sm', 'font-medium', 'hover:bg-blue-100', 'transition');
+
+      btn.addEventListener('click', () => {
+        const pref = btn.textContent;
+        if (selectedPrefs.has(pref)) {
+          selectedPrefs.delete(pref);
+          btn.classList.remove('bg-blue-500', 'text-white');
+          btn.classList.add('bg-gray-200', 'text-black');
+        } else {
+          selectedPrefs.add(pref);
+          btn.classList.remove('bg-gray-200', 'text-black');
+          btn.classList.add('bg-blue-500', 'text-white');
+        }
+      });
+    });
+
+    document.getElementById("getLocationBtn").addEventListener("click", async () => {
+      status.textContent = "📡 Requesting location permission...";
+
       if (!navigator.geolocation) {
-        alert("❌ Geolocation not supported.");
+        status.textContent = "❌ Geolocation not supported by your browser.";
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(pos => {
-        const coords = {
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          timestamp: new Date().toISOString()
-        };
+      // Optional: Check permission status
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        if (permission.state === "denied") {
+          status.textContent = "❌ Location access denied. Please allow it in browser settings.";
+          return;
+        }
+      } catch (e) {
+        // Older browsers may not support navigator.permissions — safe to ignore
+      }
 
-        fetch("https://yourusername.pythonanywhere.com/update-location", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(coords)
-        })
-        .then(res => res.json())
-        .then(data => alert("✅ Sent!\n" + JSON.stringify(data)))
-        .catch(err => alert("❌ Error sending: " + err));
-      }, err => {
-        alert("❌ Location Error: " + err.message);
-      });
-    }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const coords = {
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            timestamp: new Date().toISOString(),
+            preferences: Array.from(selectedPrefs)
+          };
+
+          status.textContent = "📨 Sending your location...";
+          fetch("https://yourusername.pythonanywhere.com/update-location", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(coords)
+          })
+          .then(res => res.json())
+          .then(data => {
+            status.textContent = "✅ Sent successfully!";
+            console.log("✅ Server replied:", data);
+          })
+          .catch(err => {
+            status.textContent = "❌ Failed to send: " + err.message;
+          });
+        },
+        err => {
+          status.textContent = "❌ Location error: " + err.message;
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000
+        }
+      );
+    });
   </script>
+
 </body>
 </html>
