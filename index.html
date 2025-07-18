@@ -82,7 +82,7 @@
           };
 
           status.textContent = "📨 Sending your location...";
-          fetch("https://yourusername.pythonanywhere.com/update-location", {
+          fetch("https://cdarun.pythonanywhere.com/update-location", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(coords)
